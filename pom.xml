@@ -117,20 +117,6 @@
 		</plugins>
 	</build>
 
-	<distributionManagement>
-		<repository>
-			<id>artifactory-releases</id>
-			<name>artifactory.pnet.ch-releases</name>
-			<url>http://artifactory.pnet.ch/artifactory/libs-release-local</url>
-			<uniqueVersion>true</uniqueVersion>
-		</repository>
-		<snapshotRepository>
-			<id>artifactory-snapshots</id>
-			<name>artifactory.pnet.ch-snapshots</name>
-			<url>http://artifactory.pnet.ch/artifactory/libs-snapshot-local</url>
-			<uniqueVersion>false</uniqueVersion>
-		</snapshotRepository>
-	</distributionManagement>
 	<properties>
 		<jdk.version>1.7</jdk.version>
 		<vertx.version>2.1.2</vertx.version>

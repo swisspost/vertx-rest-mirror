@@ -33,8 +33,8 @@ public class ZipConentHandlerTest {
 
         assertThat(zipEntries.get("server/tests/mirror/load/browser.css").length, is(977));
         assertThat(zipEntries.get("server/tests/mirror/load/loader.gif").length, is(2608));
-        assertThat(zipEntries.get("server/tests/mirror/load/nemo.html").length, is(204));
-        assertThat(zipEntries.get("server/tests/mirror/load/nemo.png").length, is(34066));
+        assertThat(zipEntries.get("server/tests/mirror/load/test.html").length, is(204));
+        assertThat(zipEntries.get("server/tests/mirror/load/test.png").length, is(34066));
         assertThat(zipEntries.get("server/tests/mirror/load/mirror1/mirror21/mirror30/test.json").length, is(22));
 
     }
