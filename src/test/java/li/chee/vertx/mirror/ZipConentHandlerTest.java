@@ -1,23 +1,19 @@
 package li.chee.vertx.mirror;
 
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
-import org.vertx.java.core.logging.Logger;
+import org.junit.runner.RunWith;
 
 import java.io.InputStream;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
-
+@RunWith(VertxUnitRunner.class)
 public class ZipConentHandlerTest {
 
     @Test
-    public void testReadZipEntries() throws Exception {
+    public void testReadZipEntries(TestContext context) throws Exception {
 
         InputStream in = this.getClass().getClassLoader().getResourceAsStream("mirror-test.zip");
 
@@ -29,14 +25,13 @@ public class ZipConentHandlerTest {
             zipEntries.putAll(zipFileEntry);
         }
 
-        assertThat(zipEntries.size(), is(5));
+        context.assertEquals(5, zipEntries.size());
 
-        assertThat(zipEntries.get("server/tests/mirror/load/browser.css").length, is(977));
-        assertThat(zipEntries.get("server/tests/mirror/load/loader.gif").length, is(2608));
-        assertThat(zipEntries.get("server/tests/mirror/load/test.html").length, is(204));
-        assertThat(zipEntries.get("server/tests/mirror/load/test.png").length, is(34066));
-        assertThat(zipEntries.get("server/tests/mirror/load/mirror1/mirror21/mirror30/test.json").length, is(22));
-
+        context.assertEquals(977, zipEntries.get("server/tests/mirror/load/browser.css").length);
+        context.assertEquals(2608, zipEntries.get("server/tests/mirror/load/loader.gif").length);
+        context.assertEquals(204, zipEntries.get("server/tests/mirror/load/test.html").length);
+        context.assertEquals(34066, zipEntries.get("server/tests/mirror/load/test.png").length);
+        context.assertEquals(22, zipEntries.get("server/tests/mirror/load/mirror1/mirror21/mirror30/test.json").length);
     }
 
 }

@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>li.chee.vertx</groupId>
 	<artifactId>rest-mirror</artifactId>
-	<version>01.00.03</version>
+	<version>02.00.01-SNAPSHOT</version>
 	<name>rest-mirror</name>
 	<description>Fetches resources as zip from url and PUT them into the rest storage</description>
 
@@ -14,8 +14,8 @@
 			<version>${vertx.version}</version>
 		</dependency>
 		<dependency>
+			<artifactId>vertx-web</artifactId>
 			<groupId>io.vertx</groupId>
-			<artifactId>vertx-platform</artifactId>
 			<version>${vertx.version}</version>
 		</dependency>
 		<dependency>
@@ -61,6 +61,12 @@
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-unit</artifactId>
+			<version>${vertx.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -118,8 +124,8 @@
 	</build>
 
 	<properties>
-		<jdk.version>1.7</jdk.version>
-		<vertx.version>2.1.2</vertx.version>
+		<jdk.version>1.8</jdk.version>
+		<vertx.version>3.2.0</vertx.version>
 		<junit.version>4.11</junit.version>
 		<slf4j.version>1.6.2</slf4j.version>
 		<log4j.version>1.2.17</log4j.version>

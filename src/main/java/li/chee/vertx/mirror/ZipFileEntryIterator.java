@@ -1,6 +1,6 @@
 package li.chee.vertx.mirror;
 
-import org.vertx.java.core.logging.Logger;
+import io.vertx.core.logging.Logger;
 
 import java.io.*;
 import java.net.URL;
