@@ -32,3 +32,7 @@ Configuration
         "mirrorPort": "7012" // where the zip file entries are putted, standard is 7012
         "mirrorRootPath": "/root" // the root path, that is used to get the zip and to put the resources, standard is "/root"
     }
+    
+Dependencies
+------------
+Versions 02.xx.xx (and later) of Rest-Mirror depend on Vert.x v3.2.0, therefore **Java 8** is required.

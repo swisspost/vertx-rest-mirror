@@ -1,42 +1,62 @@
 package li.chee.vertx.mirror;
 
-import org.vertx.java.core.http.HttpClient;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.core.logging.Logger;
-import org.vertx.java.platform.Verticle;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
+import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import io.vertx.core.http.HttpClient;
+import io.vertx.core.json.JsonObject;
 
 /**
  * Initializes the ResourcesMirrorHandler.
  *
  * @author: Florian Kammermann
  */
-public class ResourcesMirrorMod extends Verticle {
+public class ResourcesMirrorMod extends AbstractVerticle {
+
+    private Logger log = LoggerFactory.getLogger(ResourcesMirrorMod.class);
 
     @Override
-    public void start() {
+    public void start(Future<Void> startFuture) {
 
-        JsonObject config = container.config();
-        Logger log = container.logger();
+        JsonObject config = config();
 
         // the port where the http server is listen on
-        int serverPort = config.getNumber("serverPort", 8686).intValue();
+        int serverPort = config.getInteger("serverPort", 8686);
 
         // the host and port where the ResourceMirrorHandler will put the resources from within the zip file
         String selfHost = config.getString("selfClientHost", "localhost");
-        int selfPort = config.getNumber("selfClientPort", 7012).intValue();
-        int selfTimeout = config.getNumber("selfClientTimeout", 30000).intValue();
+        int selfPort = config.getInteger("selfClientPort", 7012);
+        int selfTimeout = config.getInteger("selfClientTimeout", 30000);
 
         // the host and port where the ResourceMirrorHandler will access the zip file
         String mirrorHost = config.getString("mirrorHost", "localhost");
-        int mirrorPort = config.getNumber("mirrorPort", 7012).intValue();
-        int mirrorTimeout = config.getNumber("selfClientTimeout", 30000).intValue();
+        int mirrorPort = config.getInteger("mirrorPort", 7012);
+        int mirrorTimeout = config.getInteger("selfClientTimeout", 30000);
 
         // the root path used for accessing the zip file
         String mirrorRootPath = config.getString("mirrorRootPath", "/root");
 
-        final HttpClient selfClient = vertx.createHttpClient().setHost(selfHost).setPort(selfPort).setMaxPoolSize(25).setKeepAlive(true).setPipelining(false).setConnectTimeout(selfTimeout);
-        final HttpClient mirrorClient = vertx.createHttpClient().setHost(mirrorHost).setPort(mirrorPort).setMaxPoolSize(25).setKeepAlive(true).setPipelining(false).setConnectTimeout(mirrorTimeout);
+        final HttpClient selfClient = vertx.createHttpClient(buildHttpClientOptions(selfHost, selfPort, selfTimeout));
+        final HttpClient mirrorClient = vertx.createHttpClient(buildHttpClientOptions(mirrorHost, mirrorPort, mirrorTimeout));
 
-        vertx.createHttpServer().requestHandler(new ResourcesMirrorHandler(log, mirrorRootPath, mirrorClient, selfClient)).listen(serverPort);
+        vertx.createHttpServer().requestHandler(new ResourcesMirrorHandler(vertx, log, mirrorRootPath, mirrorClient, selfClient)).listen(serverPort, result -> {
+            if(result.succeeded()){
+                startFuture.complete();
+            } else {
+                startFuture.fail(result.cause());
+            }
+        });
+    }
+
+    private HttpClientOptions buildHttpClientOptions(String host, int port, int timeout){
+        return new HttpClientOptions()
+                .setDefaultHost(host)
+                .setDefaultPort(port)
+                .setMaxPoolSize(25)
+                .setKeepAlive(true)
+                .setPipelining(false)
+                .setConnectTimeout(timeout);
     }
 }
