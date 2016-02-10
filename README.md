@@ -1,6 +1,8 @@
 vertx-mirror
 =============
 
+[![Build Status](https://drone.io/github.com/swisspush/vertx-rest-mirror/status.png)](https://drone.io/github.com/swisspush/vertx-rest-mirror/latest)
+
 A verticle that mirrors resources, which are provided as zip into a rest storage.
 
 Provide resources as zip
