@@ -1,4 +1,4 @@
-package li.chee.vertx.mirror;
+package org.swisspush.mirror;
 
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
