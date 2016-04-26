@@ -3,6 +3,7 @@ package org.swisspush.mirror;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.http.HttpClient;
@@ -41,7 +42,10 @@ public class ResourcesMirrorMod extends AbstractVerticle {
         final HttpClient selfClient = vertx.createHttpClient(buildHttpClientOptions(selfHost, selfPort, selfTimeout));
         final HttpClient mirrorClient = vertx.createHttpClient(buildHttpClientOptions(mirrorHost, mirrorPort, mirrorTimeout));
 
-        vertx.createHttpServer().requestHandler(new ResourcesMirrorHandler(vertx, log, mirrorRootPath, mirrorClient, selfClient)).listen(serverPort, result -> {
+        // in Vert.x 2x 100-continues was activated per default, in vert.x 3x it is off per default.
+        HttpServerOptions options = new HttpServerOptions().setHandle100ContinueAutomatically(true);
+
+        vertx.createHttpServer(options).requestHandler(new ResourcesMirrorHandler(vertx, log, mirrorRootPath, mirrorClient, selfClient)).listen(serverPort, result -> {
             if(result.succeeded()){
                 startFuture.complete();
             } else {
