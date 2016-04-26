@@ -1,4 +1,4 @@
-package li.chee.vertx.mirror;
+package org.swisspush.mirror;
 
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
@@ -16,7 +16,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.ext.web.Router;
 
 /**
- * GET a zip file and create a {@link li.chee.vertx.mirror.ZipFileEntryIterator}.
+ * GET a zip file and create a {@link ZipFileEntryIterator}.
  * Iterates over Zip Entries (only files are considered) and PUT them into the mirror.
  *
  * @author: Florian Kammermann

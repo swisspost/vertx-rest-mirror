@@ -1,4 +1,4 @@
-package li.chee.vertx.mirror;
+package org.swisspush.mirror;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
