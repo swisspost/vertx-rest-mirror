@@ -63,23 +63,24 @@ public class ResourcesMirrorHandler implements Handler<HttpServerRequest> {
                 ctx.response().end("the path attribute is missing");
                 return;
             }
-
             // if the x-delta-sync attribute is available
             // the value is a path (relative) to the mirrorRootPath
             // which a x-delta value is stored.
             // this value has to be passed to the request as a
             // parameter (&delta=x).
-
             String xDeltaSync = body.getString("x-delta-sync");
+
+            // content-type of the contents in zip file
+            String contentType = body.getString("content-type");
             if (xDeltaSync != null) {
-                performDeltaMirror(path, ctx.request(), xDeltaSync);
+                performDeltaMirror(path, ctx.request(), xDeltaSync, contentType);
             } else {
-                performMirror(path, ctx.request(), null);
+                performMirror(path, ctx.request(), null, contentType);
             }
         }));
     }
 
-    private void performDeltaMirror(final String path, final HttpServerRequest request, final String xDeltaSync) {
+    private void performDeltaMirror(final String path, final HttpServerRequest request, final String xDeltaSync, final String contentType) {
         final String xDeltaSyncPath = mirrorRootPath + "/" + xDeltaSync;
         final HttpClientRequest xDeltaSyncRequest = selfHttpClient.request(HttpMethod.GET, xDeltaSyncPath, xDeltaSyncResponse -> {
             xDeltaSyncResponse.bodyHandler(buffer -> {
@@ -106,7 +107,7 @@ public class ResourcesMirrorHandler implements Handler<HttpServerRequest> {
 
                 modifiedPath.append("delta=").append(delta);
 
-                performMirror(modifiedPath.toString(), request, xDeltaSyncPath);
+                performMirror(modifiedPath.toString(), request, xDeltaSyncPath, contentType);
             });
         });
 
@@ -114,7 +115,7 @@ public class ResourcesMirrorHandler implements Handler<HttpServerRequest> {
         xDeltaSyncRequest.end();
     }
 
-    private void performMirror(String path, final HttpServerRequest request, final String xDeltaSyncPath) {
+    private void performMirror(String path, final HttpServerRequest request, final String xDeltaSyncPath, final String contentType) {
         final String mirrorPath = mirrorRootPath + "/mirror/" + path;
         final HttpClientRequest zipReq = mirrorHttpClient.request(HttpMethod.GET, mirrorPath, zipRes -> {
             zipRes.bodyHandler(buffer -> {
@@ -182,6 +183,9 @@ public class ResourcesMirrorHandler implements Handler<HttpServerRequest> {
                                 }
                             });
                         });
+                        if(contentType != null) {
+                            cReq.putHeader("Content-Type", contentType);
+                        }
 
                         if (log.isTraceEnabled()) {
                             log.trace("mirror - set cReq headers");
