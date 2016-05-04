@@ -2,6 +2,7 @@ vertx-mirror
 =============
 
 [![Build Status](https://drone.io/github.com/swisspush/vertx-rest-mirror/status.png)](https://drone.io/github.com/swisspush/vertx-rest-mirror/latest)
+[![Maven Central](https://img.shields.io/maven-central/v/org.swisspush/rest-mirror.svg)]()
 
 A verticle that mirrors resources, which are provided as zip into a rest storage.
 
