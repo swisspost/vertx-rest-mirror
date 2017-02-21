@@ -1,7 +1,8 @@
 vertx-mirror
 =============
 
-[![Build Status](https://drone.io/github.com/swisspush/vertx-rest-mirror/status.png)](https://drone.io/github.com/swisspush/vertx-rest-mirror/latest)
+[![Build Status](https://travis-ci.org/swisspush/vertx-rest-mirror.svg?branch=master)](https://travis-ci.org/swisspush/vertx-rest-mirror)
+[![codecov](https://codecov.io/gh/swisspush/vertx-rest-mirror/branch/master/graph/badge.svg)](https://codecov.io/gh/swisspush/vertx-rest-mirror)
 [![Maven Central](https://img.shields.io/maven-central/v/org.swisspush/rest-mirror.svg)]()
 
 A verticle that mirrors resources, which are provided as zip into a rest storage.
