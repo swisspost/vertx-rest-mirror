@@ -36,7 +36,8 @@ public class ResourcesMirrorHandler implements Handler<HttpServerRequest> {
 
     /**
      * Default constructor
-     * 
+     *
+     * @param vertx vertx
      * @param log logger
      * @param mirrorRootPath the root path, that is used to get the zip and to put the resources
      * @param mirrorHttpClient where the verticle access the zip
@@ -267,7 +268,7 @@ public class ResourcesMirrorHandler implements Handler<HttpServerRequest> {
     }
 
     /**
-     * Replaces the delta parameter (../lola?blah=tralala&delta=10&blah)
+     * Replaces the delta parameter
      * with another valid number.
      * If the pattern could not be found, the original path is returned instead.
      *
