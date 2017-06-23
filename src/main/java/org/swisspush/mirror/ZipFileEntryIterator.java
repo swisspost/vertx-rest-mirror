@@ -1,6 +1,7 @@
 package org.swisspush.mirror;
 
-import io.vertx.core.logging.Logger;
+
+import org.slf4j.Logger;
 
 import java.io.*;
 import java.net.URL;

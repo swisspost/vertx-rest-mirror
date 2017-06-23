@@ -4,8 +4,7 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import org.slf4j.LoggerFactory;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.json.JsonObject;
 
@@ -16,7 +15,7 @@ import io.vertx.core.json.JsonObject;
  */
 public class ResourcesMirrorMod extends AbstractVerticle {
 
-    private Logger log = LoggerFactory.getLogger(ResourcesMirrorMod.class);
+    private org.slf4j.Logger log = LoggerFactory.getLogger(ResourcesMirrorMod.class);
 
     @Override
     public void start(Future<Void> startFuture) {
