@@ -33,7 +33,7 @@ apply plugin: 'signing'
 apply plugin: 'jacoco'
 apply plugin: 'io.codearte.nexus-staging'
 
-archivesBaseName='mirror'
+// archivesBaseName='mirror'
 
 if (!project.hasProperty('repoUsername')) {
   ext.repoUsername = 'randomUsername'
@@ -247,7 +247,7 @@ nexusStaging {
 
 def configurePom(def pom) {
   pom.project {
-    name 'mirror'
+    name 'rest-mirror'
     description 'A verticle that mirrors resources, which are provided as zip into a rest storage.'
     inceptionYear '2016'
     packaging 'jar'
