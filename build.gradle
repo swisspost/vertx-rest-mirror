@@ -247,7 +247,7 @@ nexusStaging {
 
 def configurePom(def pom) {
   pom.project {
-    name 'rest-mirror'
+    name rootProject.name
     description 'A verticle that mirrors resources, which are provided as zip into a rest storage.'
     inceptionYear '2016'
     packaging 'jar'
