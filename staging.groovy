@@ -97,7 +97,6 @@ class Staging {
             println("No more action.")
             return 0
         }
-        return 0
         def data = getData(stagingProfileId, repositoryId)
 
         // close repository
@@ -121,8 +120,6 @@ class Staging {
 
         // promote repository
         def response = ['bash', '-c', "curl -sL -w \"%{http_code}\" -H \"Content-Type: application/json\" -X POST -d '" + data + "' https://" + ossUserName + ":" + ossPassword + "@oss.sonatype.org/service/local/staging/profiles/" + stagingProfileId + "/promote -o /dev/null"].execute().text
-        println response
-
         if (Integer.valueOf(response) > 299) {
             throw new IllegalArgumentException("HTTP request failed, getting status code: ${response}")
         }
