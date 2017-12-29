@@ -6,7 +6,7 @@
     <version>2.1.12-SNAPSHOT</version>
     <name>rest-mirror</name>
     <description>
-        A highly scalable redis-persistent queuing system for vertx
+        A verticle that mirrors resources, which are provided as zip into a rest storage.
     </description>
     <url>https://github.com/swisspush/vertx-rest-mirror</url>
     <inceptionYear>2016</inceptionYear>
