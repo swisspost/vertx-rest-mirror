@@ -27,11 +27,24 @@
             <name>Marc-Andre Weber</name>
             <url>https://github.com/mcweba</url>
         </developer>
+        <developer>
+            <id>ljucam</id>
+            <name>Mario Aerni</name>
+            <url>https://github.com/ljucam</url>
+        </developer>
     </developers>
     <scm>
         <url>https://github.com/swisspush/vertx-rest-mirror.git</url>
     </scm>
     <dependencies>
+        <!-- swisspush dependencies -->
+        <dependency>
+            <groupId>org.swisspush</groupId>
+            <artifactId>rest-storage</artifactId>
+            <version>2.5.3</version>
+        </dependency>
+
+        <!-- other deps -->
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>

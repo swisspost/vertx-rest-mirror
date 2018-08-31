@@ -31,7 +31,9 @@ import java.util.function.Function;
 @RunWith(VertxUnitRunner.class)
 public class ResourceMirrorHandlerTest {
     private static final Logger log = LoggerFactory.getLogger(ResourceMirrorHandlerTest.class);
-    private static final Map<String, Boolean> entries = new HashMap<>();
+    private static final Map<String, ZipFileTestEntry> entries = new HashMap<>();
+    private static final HashMap<String, String> expectedMimeTypes = new HashMap<>();
+
 
     private static Vertx vertx;
     private static int TARGET_PORT = 7012;
@@ -41,19 +43,32 @@ public class ResourceMirrorHandlerTest {
     private static HttpServer targetServer;
 
 
+    private static class ZipFileTestEntry {
+        public String contentTypeFound;
+        public boolean entryFound;
+    }
+
     @BeforeClass
     public static void setupBeforeClass(TestContext context) {
         Async async = context.async();
 
         // the zip entries (must match the file)
-        entries.put("test_mirror/t1.json", false);
-        entries.put("test_mirror/t1/browser.css", false);
-        entries.put("test_mirror/t2/t21/test.html", false);
-        entries.put("test_mirror/t2/t22/t31/loader.gif", false);
-        entries.put("test_mirror/t2/t22/t31/test.png", false);
+        entries.put("test_mirror/t1.json", new ZipFileTestEntry());
+        entries.put("test_mirror/t1/browser.css", new ZipFileTestEntry());
+        entries.put("test_mirror/t2/t21/test.html", new ZipFileTestEntry());
+        entries.put("test_mirror/t2/t21/json", new ZipFileTestEntry());
+        entries.put("test_mirror/t2/t22/t31/loader.gif", new ZipFileTestEntry());
+        entries.put("test_mirror/t2/t22/t31/test.png", new ZipFileTestEntry());
+
+        expectedMimeTypes.put("test_mirror/t1.json", "application/json");
+        expectedMimeTypes.put("test_mirror/t1/browser.css", "text/css");
+        expectedMimeTypes.put("test_mirror/t2/t21/test.html", "text/html");
+        expectedMimeTypes.put("test_mirror/t2/t21/json", "application/json");
+        expectedMimeTypes.put("test_mirror/t2/t22/t31/loader.gif", "image/gif");
+        expectedMimeTypes.put("test_mirror/t2/t22/t31/test.png", "image/png");
 
 
-        vertx = Vertx.vertx();
+                vertx = Vertx.vertx();
         JsonObject mirrorConfig = new JsonObject();
         mirrorConfig.put("selfClientPort", TARGET_PORT);
         mirrorConfig.put("mirrorRootPath", "");
@@ -244,14 +259,13 @@ public class ResourceMirrorHandlerTest {
     }
 
     @Test
-    public void testMirror_GetZipDeployZip(TestContext context) {
+    public void testMirror_MimeTypeResolver(TestContext context) {
         Async async = context.async();
 
         /*
          * Settings
          */
         final String path = "test_mirror.zip";
-
 
         // emulate a target server
         targetServer = createServer(TARGET_PORT, request -> {
@@ -264,7 +278,7 @@ public class ResourceMirrorHandlerTest {
             // add put and its success to the map (overwrite false)
             String key = request.uri();
             key = key.substring(1);
-            entries.put(key, true);
+            entries.get(key).contentTypeFound = request.getHeader("Content-Type");
             request.response().end();
             return null;
         });
@@ -305,7 +319,88 @@ public class ResourceMirrorHandlerTest {
 
                         // every single entry correct and contained in set?
                         context.assertTrue(entries.containsKey(entry.getString("path")));
-                        context.assertTrue(entries.get(entry.getString("path")));
+                        context.assertEquals(expectedMimeTypes.get(entry.getString("path")),
+                                entries.get(entry.getString("path")).contentTypeFound);
+                        context.assertTrue(entry.getBoolean("success"));
+                    }
+                    else {
+                        context.fail();
+                    }
+                }
+
+                async.complete();
+            });
+
+            return null;
+        };
+
+        // start the tests ...
+        performMirrorRequest(path, testFunction, null);
+    }
+
+    @Test
+    public void testMirror_GetZipDeployZip(TestContext context) {
+        Async async = context.async();
+
+        /*
+         * Settings
+         */
+        final String path = "test_mirror.zip";
+
+
+        // emulate a target server
+        targetServer = createServer(TARGET_PORT, request -> {
+
+            /*
+             * Add all responses the target server has
+             * to provide.
+             */
+
+            // add put and its success to the map (overwrite false)
+            String key = request.uri();
+            key = key.substring(1);
+            entries.get(key).entryFound = true;
+            request.response().end();
+            return null;
+        });
+
+
+        // emulate a source server
+        sourceServer = createServer(SOURCE_PORT, request -> {
+            if ( request.uri().endsWith(path) ) {
+                writeZipStream(request, path);
+            }
+            else {
+                request.response().setStatusCode(HttpStatus.SC_NOT_FOUND);
+            }
+
+            request.response().end();
+
+            return null;
+        });
+
+        // Function which performs all necessary tests
+        Function<HttpClientResponse, Void> testFunction = httpClientResponse -> {
+            log.debug("Result is: " );
+            context.assertEquals(HttpStatus.SC_OK, httpClientResponse.statusCode());
+            httpClientResponse.bodyHandler( body -> {
+                JsonObject result = new JsonObject(body.toString());
+
+                // all elements ok?
+                context.assertTrue(result.getBoolean("success"));
+                JsonArray results = result.getJsonArray("loadedresources");
+
+                // correct count?
+                context.assertEquals(entries.size(), results.size());
+
+                for (Object object : results) {
+                    if ( object instanceof JsonObject ) {
+                        JsonObject entry = (JsonObject) object;
+                        log.debug("" + entry);
+
+                        // every single entry correct and contained in set?
+                        context.assertTrue(entries.containsKey(entry.getString("path")));
+                        context.assertTrue(entries.get(entry.getString("path")).entryFound);
                         context.assertTrue(entry.getBoolean("success"));
                     }
                     else {
@@ -688,7 +783,7 @@ public class ResourceMirrorHandlerTest {
                 context.assertEquals(checked.get("x-delta"), expectedDelta);
 
                 // request count
-                context.assertEquals(3, successfulRequestCount.get());
+                context.assertEquals(4, successfulRequestCount.get());
                 context.assertEquals(2, failedRequestCount.get());
                 context.assertEquals(entries.size(), totalRequstCount.get());
 
@@ -717,7 +812,7 @@ public class ResourceMirrorHandlerTest {
                     }
                 }
 
-                context.assertEquals(3, successCounter);
+                context.assertEquals(4, successCounter);
                 context.assertEquals(2, failedCounter);
 
                 log.debug("Content:");
