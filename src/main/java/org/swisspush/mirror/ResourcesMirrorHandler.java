@@ -1,5 +1,19 @@
 package org.swisspush.mirror;
 
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.DecodeException;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.Router;
+import org.slf4j.Logger;
+import org.swisspush.reststorage.MimeTypeResolver;
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -7,17 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.*;
-import io.vertx.core.json.DecodeException;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.Router;
-import org.slf4j.Logger;
 
 /**
  * GET a zip file and create a {@link ZipFileEntryIterator}.
@@ -32,7 +35,10 @@ public class ResourcesMirrorHandler implements Handler<HttpServerRequest> {
     private final String mirrorRootPath;
     private final HttpClient mirrorHttpClient;
     private final HttpClient selfHttpClient;
+    private final MimeTypeResolver mimeTypeResolver;
+
     private final static Pattern X_DELTA_PARAMETER_PATTERN = Pattern.compile("delta=([^&]+)");
+    private static final String DEFAULT_MIME_TYPE = "application/json";
 
     /**
      * Default constructor
@@ -48,6 +54,7 @@ public class ResourcesMirrorHandler implements Handler<HttpServerRequest> {
         this.mirrorRootPath = mirrorRootPath;
         this.mirrorHttpClient = mirrorHttpClient;
         this.selfHttpClient = selfHttpClient;
+        this.mimeTypeResolver = new MimeTypeResolver(DEFAULT_MIME_TYPE);
 
         this.router = Router.router(vertx);
 
@@ -76,17 +83,15 @@ public class ResourcesMirrorHandler implements Handler<HttpServerRequest> {
             // parameter (&delta=x).
             String xDeltaSync = body.getString("x-delta-sync");
 
-            // content-type of the contents in zip file
-            String contentType = body.getString("content-type");
             if (xDeltaSync != null) {
-                performDeltaMirror(path, ctx.request(), xDeltaSync, contentType);
+                performDeltaMirror(path, ctx.request(), xDeltaSync);
             } else {
-                performMirror(path, ctx.request(), null, 0, contentType);
+                performMirror(path, ctx.request(), null, 0);
             }
         }));
     }
 
-    private void performDeltaMirror(final String path, final HttpServerRequest request, final String xDeltaSync, final String contentType) {
+    private void performDeltaMirror(final String path, final HttpServerRequest request, final String xDeltaSync) {
         final String xDeltaSyncPath = mirrorRootPath + "/" + xDeltaSync;
         final HttpClientRequest xDeltaSyncRequest = selfHttpClient.request(HttpMethod.GET, xDeltaSyncPath, xDeltaSyncResponse -> {
             xDeltaSyncResponse.bodyHandler(buffer -> {
@@ -113,7 +118,7 @@ public class ResourcesMirrorHandler implements Handler<HttpServerRequest> {
 
                 modifiedPath.append("delta=").append(currentDelta);
 
-                performMirror(modifiedPath.toString(), request, xDeltaSyncPath, currentDelta, contentType);
+                performMirror(modifiedPath.toString(), request, xDeltaSyncPath, currentDelta);
             });
         });
 
@@ -121,7 +126,7 @@ public class ResourcesMirrorHandler implements Handler<HttpServerRequest> {
         xDeltaSyncRequest.end();
     }
 
-    private void performMirror(String path, final HttpServerRequest request, final String xDeltaSyncPath, final int currentDelta, final String contentType) {
+    private void performMirror(String path, final HttpServerRequest request, final String xDeltaSyncPath, final int currentDelta) {
         final String mirrorPath = mirrorRootPath + "/mirror/" + path;
         final HttpClientRequest zipReq = mirrorHttpClient.request(HttpMethod.GET, mirrorPath, zipRes -> {
             zipRes.bodyHandler(buffer -> {
@@ -203,7 +208,7 @@ public class ResourcesMirrorHandler implements Handler<HttpServerRequest> {
 
                                                 // in order to get all data, we perform a retry with xDelta = 0
                                                 log.trace("mirror - starting a retry with x-delta = 0!");
-                                                performMirror(replaceInvalidDeltaParameter(path, xDelta), request, xDeltaSyncPath, xDelta,contentType);
+                                                performMirror(replaceInvalidDeltaParameter(path, xDelta), request, xDeltaSyncPath, xDelta);
                                                 return;
                                             }
                                         } catch (NumberFormatException e) {
@@ -232,9 +237,8 @@ public class ResourcesMirrorHandler implements Handler<HttpServerRequest> {
                                 }
                             });
                         });
-                        if(contentType != null) {
-                            cReq.putHeader("Content-Type", contentType);
-                        }
+
+                        cReq.putHeader("Content-Type", mimeTypeResolver.resolveMimeType(relativePath));
 
                         if (log.isTraceEnabled()) {
                             log.trace("mirror - set cReq headers");
