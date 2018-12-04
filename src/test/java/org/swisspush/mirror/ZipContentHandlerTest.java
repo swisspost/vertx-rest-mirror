@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RunWith(VertxUnitRunner.class)
-public class ZipConentHandlerTest {
+public class ZipContentHandlerTest {
 
     @Test
     public void testReadZipEntries(TestContext context) throws IOException {
