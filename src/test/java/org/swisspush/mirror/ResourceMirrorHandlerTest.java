@@ -202,7 +202,7 @@ public class ResourceMirrorHandlerTest {
 
     @Test
     public void testMirror_replaceInvalidDeltaParameter(TestContext context) {
-        ResourcesMirrorHandler rmh = new ResourcesMirrorHandler(null, null, null, null, null);
+        MirrorRequestHandler rmh = new MirrorRequestHandler(null, null, null, null);
 
         /*
          * case 1
@@ -552,7 +552,7 @@ public class ResourceMirrorHandlerTest {
     }
 
     @Test
-    public void testMirror_delta_to_high(TestContext context) {
+    public void testMirror_delta_too_high(TestContext context) {
         Async async = context.async();
 
         // Settings
@@ -770,7 +770,7 @@ public class ResourceMirrorHandlerTest {
 
         // Function which performs all necessary tests
         Function<HttpClientResponse, Void> testFunction = httpClientResponse -> {
-            context.assertEquals(HttpStatus.SC_OK, httpClientResponse.statusCode());
+            context.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, httpClientResponse.statusCode());
             httpClientResponse.bodyHandler( body -> {
                 JsonObject result = new JsonObject(body.toString());
                 JsonArray results = result.getJsonArray("loadedresources");
