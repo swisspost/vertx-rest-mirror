@@ -15,7 +15,15 @@ import org.swisspush.reststorage.MimeTypeResolver;
 
 /**
  * Visits a ZipInputStream (wrapped in a {@link ZipIterator}) entry by entry
- * and executes a http-PUT with its content for each entry
+ * and executes a http-PUT with its content for each entry.
+ * <br><br>
+ * Implementation notes:
+ * <ul>
+ *     <li>handles entries one after another to avoid peak load for huge ZIPs</li>
+ *     <li>keeps a log for all processed ZIP-entries, incl. a success-indicator for each entry</li>
+ *     <li>continues processing even if a PUT fails</li>
+ *     <li>... but stops processing if we get sudden exceptions, e.g. from corrupt ZIP-stream</li>
+ * </ul>
  */
 public class ZipEntryPutter {
 
@@ -28,6 +36,9 @@ public class ZipEntryPutter {
     private final ZipIterator zipIterator;
     private Handler<AsyncResult<Void>> doneHandler;
 
+    /**
+     * a 'log' for all processed ZIP-entries
+     */
     final JsonArray loadedResources = new JsonArray();
     private boolean success = true;
 

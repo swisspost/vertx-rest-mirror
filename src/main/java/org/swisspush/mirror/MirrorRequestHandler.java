@@ -16,6 +16,15 @@ import java.util.regex.Pattern;
 
 /**
  * Handle ONE MirrorRequest
+ *
+ * <ul>
+ *     <li>GET a ZIP</li>
+ *     <li>parse the ZIP ({@link ZipIterator}) and start a {@link ZipEntryPutter} accordingly</li>
+ *     <li>generate Http-Response</li>
+ *     <li>Option: do a 'delta'-request incl. reading and updating of the 'last known delta value' resource</li>
+ * </ul>
+ *
+ * @author Florian Kammermann, Mario Aerni, Oliver Henning
  */
 class MirrorRequestHandler {
 
@@ -30,7 +39,7 @@ class MirrorRequestHandler {
 
     /**
      * null when it's a normal (i.e. no-delta) request
-     * Otherwise its the path of a resource which stores our last known x-delta value
+     * Otherwise it's the path of a resource which stores our last known x-delta value
      */
     private String xDeltaSyncPath = null;
 
@@ -39,6 +48,9 @@ class MirrorRequestHandler {
      */
     private long currentDelta = 0;
 
+    /**
+     * for delta-request this contains the new (i.e. last known) delta-value as extracted from GET-ZIP-Response-Header
+     */
     private long newDelta = 0;
 
     private ZipEntryPutter zipEntryPutter;

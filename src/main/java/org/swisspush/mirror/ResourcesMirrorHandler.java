@@ -11,10 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * GET a zip file and create a ZipFileEntryIterator.
- * Iterates over Zip Entries (only files are considered) and PUT them into the mirror.
- *
- * Option to do a 'Delta'-Request for incremental mirroring
+ * <ul>
+ *     <li>receives and parses MirrorRequest</li>
+ *     <li>starts a new instance of {@link MirrorRequestHandler} for each MirrorRequest</li>
+ * </ul>
  *
  * @author Florian Kammermann, Mario Aerni, Oliver Henning
  */

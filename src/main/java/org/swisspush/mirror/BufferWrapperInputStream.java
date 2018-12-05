@@ -7,8 +7,10 @@ import java.io.InputStream;
 /**
  * Wraps a Vert.x Buffer to a classic Java-IO InputStream.
  * We need this to handle Buffer content as a ZipInputStream
+ * <br>
+ * Note that this avoids in-memory data duplication as happened when we used "new ByteArrayInputStream(buffer.getBytes())"
  *
- * Note that this avoids in-memory data duplication as happened when we used <pre>new ByteArrayInputStream(buffer.getBytes())</pre>
+ * @author Oliver Henning
  */
 public class BufferWrapperInputStream extends InputStream {
 

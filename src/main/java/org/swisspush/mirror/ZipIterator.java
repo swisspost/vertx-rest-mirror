@@ -9,11 +9,14 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipInputStream;
 
 /**
- * Iterates over the content of a zip.
- * The zip must be provided as InputStream
- * Only files within the ZIP are considered as valid zip entries (i.e. directory entries in ZIP are skipped/ignored).
+ * Iterates over the content of a ZIP.
+ * <ul>
+ *     <li>Behaves like a {@link java.util.Iterator} - but does not formally implement it as we don't want to hide Exceptions</li>
+ *     <li>ZIP must be provided as InputStream</li>
+ *     <li>Only <b>file</b>-entries are are used (in other words: directory-entries in the ZIP are skipped/ignored)</li>
+ * </ul>
  *
- * @author: Oliver Henning
+ * @author Oliver Henning
  */
 public class ZipIterator {
 
@@ -28,11 +31,11 @@ public class ZipIterator {
     }
 
     /**
-     * @return the next UnzippedResource (containing relative path as in ZIP-Entry and unZIPped content as a Vert.x Buffer)
+     * @return the next UnzippedResource (containing relative path as in ZIP-Entry and unZIPped content as a Vert.x Buffer). See {@link java.util.Iterator#next()}
      *
-     * @throws IOException
-     * @throws ZipException
-     * @throws NoSuchElementException
+     * @throws IOException from the underlying ZipInputStream
+     * @throws ZipException from the underlying ZipInputStream
+     * @throws NoSuchElementException see {@link java.util.Iterator#next()}
      */
     public UnzippedResource next() throws IOException, NoSuchElementException {
         if (unzippedResource == null) {
@@ -46,9 +49,10 @@ public class ZipIterator {
     }
 
     /**
-     * @return true when {@link #next() would return a non-null value}
-     * @throws IOException
-     * @throws ZipException
+     * @return true when {@link #next()} would return a non-null value. See {@link java.util.Iterator#hasNext()}
+     *
+     * @throws IOException from the underlying ZipInputStream
+     * @throws ZipException from the underlying ZipInputStream
      */
     public boolean hasNext() throws IOException {
         if (zis == null) {
