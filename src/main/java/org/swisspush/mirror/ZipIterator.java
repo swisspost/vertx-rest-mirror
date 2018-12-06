@@ -38,10 +38,8 @@ public class ZipIterator {
      * @throws NoSuchElementException see {@link java.util.Iterator#next()}
      */
     public UnzippedResource next() throws IOException, NoSuchElementException {
-        if (unzippedResource == null) {
-            if (!hasNext()) {
-                throw new NoSuchElementException("done");
-            }
+        if (unzippedResource == null && !hasNext()) {
+            throw new NoSuchElementException("done");
         }
         UnzippedResource current = unzippedResource;
         unzippedResource = null;
