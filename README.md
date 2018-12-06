@@ -20,7 +20,7 @@ URL: `http://localhost:8686/mirror`
 payload:   
 
     {
-        "path": "relative/path/to/the/zip.zip" // The relative path (see config parameter mirrorRootPath) to the zip
+        "path": "relative/path/to/the/zip.zip" // Relative path (see config parameter mirrorRootPath) to the zip
         ["content-type": "application/json"]  // optional - content-type of the content elements in zip file
     }
 
