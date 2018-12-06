@@ -48,13 +48,13 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
-            <version>3.3.3</version>
+            <version>${vertx.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-web</artifactId>
-            <version>3.3.3</version>
+            <version>${vertx.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -97,7 +97,7 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-unit</artifactId>
-            <version>3.3.3</version>
+            <version>${vertx.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -328,6 +328,7 @@
         </profile>
     </profiles>
     <properties>
+        <vertx.version>3.5.3</vertx.version>
         <project.build.sourceEncoding>UTF8</project.build.sourceEncoding>
         <sonatypeOssDistMgmtSnapshotsUrl>
             https://oss.sonatype.org/content/repositories/snapshots/
