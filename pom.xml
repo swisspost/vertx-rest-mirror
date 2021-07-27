@@ -328,7 +328,7 @@
         </profile>
     </profiles>
     <properties>
-        <vertx.version>3.5.3</vertx.version>
+        <vertx.version>3.5.4</vertx.version>
         <project.build.sourceEncoding>UTF8</project.build.sourceEncoding>
         <sonatypeOssDistMgmtSnapshotsUrl>
             https://oss.sonatype.org/content/repositories/snapshots/
