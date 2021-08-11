@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -110,8 +111,33 @@ public class ResourceMirrorHandlerTest {
         options.setPort(port);
         HttpServer server = vertx.createHttpServer(options);
         server.requestHandler(handlerFunction::apply);
-        server.listen();
+        waitUntilStarted(server);
         return server;
+    }
+
+    /**
+     * Waits at most 10 seconds until the provided server has been started
+     */
+    private static void waitUntilStarted(HttpServer server) {
+        AtomicBoolean started = new AtomicBoolean();
+        server.listen(e -> {
+            synchronized (started) {
+                started.set(true);
+                started.notifyAll();
+            }
+        });
+        synchronized (started) {
+            InterruptedException ie = null;
+            try {
+                started.wait(10_000); // just wait 10s at max
+                if (started.get()) {
+                    return;
+                }
+            } catch (InterruptedException e) {
+                ie = e;
+            }
+            throw new AssertionError("Server on localhost:" + server.actualPort() + " has not been started", ie);
+        }
     }
 
     /**
