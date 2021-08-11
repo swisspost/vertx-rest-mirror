@@ -10,7 +10,7 @@ import io.vertx.core.json.JsonObject;
 /**
  * Initializes the ResourcesMirrorHandler.
  *
- * @author: Florian Kammermann, Oliver Henning
+ * @author Florian Kammermann, Oliver Henning
  */
 public class ResourcesMirrorMod extends AbstractVerticle {
 
