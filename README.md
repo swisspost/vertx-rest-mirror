@@ -1,7 +1,7 @@
 vertx-mirror
 =============
 
-[![Build Status](https://travis-ci.org/swisspush/vertx-rest-mirror.svg?branch=master)](https://travis-ci.org/swisspush/vertx-rest-mirror)
+[![Build Status](https://travis-ci.com/swisspush/vertx-rest-mirror.svg?branch=master)](https://travis-ci.com/swisspush/vertx-rest-mirror)
 [![codecov](https://codecov.io/gh/swisspush/vertx-rest-mirror/branch/master/graph/badge.svg)](https://codecov.io/gh/swisspush/vertx-rest-mirror)
 [![Maven Central](https://img.shields.io/maven-central/v/org.swisspush/rest-mirror.svg)]()
 
