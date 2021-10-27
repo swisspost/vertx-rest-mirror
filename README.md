@@ -45,4 +45,4 @@ Dependencies
 
 - Versions 2.1.14 (and later) of Rest-Mirror depend on org.swisspush.rest-storage
 
-- Versions 02.xx.xx (and later) of Rest-Mirror depend on Vert.x v3.2.0, therefore **Java 8** is required.
+- Versions 02.xx.xx (and later) of Rest-Mirror depend on Vert.x v3.2.0, therefore **Java 8** is required
