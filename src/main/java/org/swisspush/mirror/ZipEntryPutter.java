@@ -4,9 +4,7 @@ import io.netty.handler.codec.http.HttpHeaderValues;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientRequest;
-import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.*;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.slf4j.Logger;
@@ -83,35 +81,39 @@ public class ZipEntryPutter {
         final String relativePath = unzippedResource.filename;
         final String absolutePath = mirrorRootPath + "/" + relativePath;
         LOG.debug("mirror - put resource: {}", absolutePath);
-        final HttpClientRequest cReq = httpClient.put(absolutePath, cRes -> {
-            LOG.debug("mirror - PUT request {} finished with statusCode {}", relativePath, cRes.statusCode());
-
-            // every succeeded and failed result must be stored
-            int statusCodeGroup = cRes.statusCode() / 100;
-            addLoadedResourceInfo(relativePath, statusCodeGroup == 2);
-
-            cRes.exceptionHandler(ex -> {
+        httpClient.request(HttpMethod.PUT, absolutePath).onComplete(event -> {
+            HttpClientRequest cReq = event.result();
+            cReq.exceptionHandler(ex -> {
                 LOG.error("mirror - error in put request for {}", relativePath, ex);
                 addLoadedResourceInfo(relativePath, false);
                 callDoneHandler(Future.failedFuture(ex));
             });
 
-            cRes.endHandler(end -> {
-                handleNext();
+            String mimeType = MIME_TYPE_RESOLVER.resolveMimeType(relativePath);
+            LOG.debug("mirror - put zip file entry: {}", relativePath);
+            cReq.putHeader(HttpHeaders.CONTENT_TYPE, mimeType)
+                    .putHeader(HttpHeaders.CONTENT_LENGTH, Integer.toString(unzippedResource.buffer.length()))
+                    .end(unzippedResource.buffer);
+            cReq.send(asyncResult -> {
+                HttpClientResponse cRes = asyncResult.result();
+                LOG.debug("mirror - PUT request {} finished with statusCode {}", relativePath, cRes.statusCode());
+
+                // every succeeded and failed result must be stored
+                int statusCodeGroup = cRes.statusCode() / 100;
+                addLoadedResourceInfo(relativePath, statusCodeGroup == 2);
+
+                cRes.exceptionHandler(ex -> {
+                    LOG.error("mirror - error in put request for {}", relativePath, ex);
+                    addLoadedResourceInfo(relativePath, false);
+                    callDoneHandler(Future.failedFuture(ex));
+                });
+
+                cRes.endHandler(end -> {
+                    handleNext();
+                });
             });
         });
 
-        cReq.exceptionHandler(ex -> {
-            LOG.error("mirror - error in put request for {}", relativePath, ex);
-            addLoadedResourceInfo(relativePath, false);
-            callDoneHandler(Future.failedFuture(ex));
-        });
-
-        String mimeType = MIME_TYPE_RESOLVER.resolveMimeType(relativePath);
-        LOG.debug("mirror - put zip file entry: {}", relativePath);
-        cReq.putHeader(HttpHeaders.CONTENT_TYPE, mimeType)
-                .putHeader(HttpHeaders.CONTENT_LENGTH, Integer.toString(unzippedResource.buffer.length()))
-                .end(unzippedResource.buffer);
     }
 
     private void addLoadedResourceInfo(String relativePath, boolean success) {

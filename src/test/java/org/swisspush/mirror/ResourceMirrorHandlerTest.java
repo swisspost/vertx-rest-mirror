@@ -13,13 +13,19 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -69,7 +75,7 @@ public class ResourceMirrorHandlerTest {
         expectedMimeTypes.put("test_mirror/t2/t22/t31/test.png", "image/png");
 
 
-                vertx = Vertx.vertx();
+        vertx = Vertx.vertx();
         JsonObject mirrorConfig = new JsonObject();
         mirrorConfig.put("selfClientPort", TARGET_PORT);
         mirrorConfig.put("mirrorRootPath", "");
@@ -87,11 +93,11 @@ public class ResourceMirrorHandlerTest {
 
     @After
     public void closeServer() {
-        if ( targetServer != null ) {
+        if (targetServer != null) {
             targetServer.close();
         }
 
-        if ( sourceServer != null ) {
+        if (sourceServer != null) {
             sourceServer.close();
         }
     }
@@ -101,10 +107,10 @@ public class ResourceMirrorHandlerTest {
      * Creates a new localhost server listening on the given port and using the
      * given handler.
      *
-     * @param port port of the server
+     * @param port            port of the server
      * @param handlerFunction the handler
      */
-    private static HttpServer createServer(int port, Function<HttpServerRequest,Void> handlerFunction) {
+    private static HttpServer createServer(int port, Function<HttpServerRequest, Void> handlerFunction) {
         HttpServerOptions options = new HttpServerOptions();
         options.setHandle100ContinueAutomatically(true);
         options.setHost("localhost");
@@ -143,52 +149,54 @@ public class ResourceMirrorHandlerTest {
     /**
      * Performs a mirror request to the server.
      *
-     * @param path - the path which should be requested
+     * @param path         - the path which should be requested
      * @param testFunction - the function containing the handler
-     * @param deltaPath - the path to the deltasync resource
+     * @param deltaPath    - the path to the deltasync resource
      */
-    private void performMirrorRequest(String path, Function<HttpClientResponse,Void> testFunction, String deltaPath) {
+    private void performMirrorRequest(String path, Function<HttpClientResponse, Void> testFunction, String deltaPath) {
         JsonObject object = new JsonObject();
         object.put("path", path);
-        if ( deltaPath != null ) {
-            object.put("x-delta-sync", deltaPath );
+        if (deltaPath != null) {
+            object.put("x-delta-sync", deltaPath);
         }
 
         String content = object.toString();
         String length = Integer.toString(content.length());
 
-        vertx.createHttpClient().post(SERVER_PORT, "localhost", "/mirror")
-                .putHeader("Content-Type", "application/json")
-                .putHeader("Content-Length", length)
-                .handler(testFunction::apply)
-                .write(content, "UTF-8")
-                .end();
+        vertx.createHttpClient().request(HttpMethod.POST, SERVER_PORT, "localhost", "/mirror").onComplete(event -> {
+            HttpClientRequest request = event.result();
+            request.putHeader("Content-Type", "application/json");
+            request.putHeader("Content-Length", length);
+            request.write(content, "UTF-8");
+            request.send(asyncResult -> testFunction.apply(asyncResult.result()));
+        });
+
+
     }
 
     /**
      * Writes the zip stream from the given path as a response to the given request.
      *
      * @param request incoming request
-     * @param path path for the zip
+     * @param path    path for the zip
      */
     private void writeZipStream(final HttpServerRequest request, final String path) {
-        try ( InputStream in = this.getClass().getClassLoader().getResourceAsStream(path)) {
+        try (InputStream in = this.getClass().getClassLoader().getResourceAsStream(path)) {
             Buffer buffer = Buffer.buffer(IOUtils.toByteArray(in));
             request.response().setChunked(false);
             request.response().headers().add("Content-Length", String.valueOf(buffer.length()));
-            request.response().write(buffer);
             request.response().setStatusCode(HttpStatus.SC_OK);
-        }
-        catch( Exception e ) {
+            request.response().write(buffer);
+        } catch (Exception e) {
             request.response().setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            System.err.println("Error: " + e.getMessage() );
+            System.err.println("Error: " + e.getMessage());
         }
     }
 
     /**
      * Writes the GET response for the delta request.
      *
-     * @param request request
+     * @param request      request
      * @param currentDelta current delta
      */
     private void writeGETDeltaResponse(final HttpServerRequest request, final int currentDelta) {
@@ -196,29 +204,29 @@ public class ResourceMirrorHandlerTest {
         content.put("x-delta", currentDelta);
         Buffer buffer = Buffer.buffer(content.toString());
         request.response().setChunked(false);
+        request.response().setStatusCode(HttpStatus.SC_OK);
         request.response().headers().add("Content-Length", String.valueOf(buffer.length()));
         request.response().headers().add("Content-Type", "application/json");
         request.response().write(buffer);
-        request.response().setStatusCode(HttpStatus.SC_OK);
         request.response().end();
     }
 
     /**
      * Writes the PUT response for the target server.
      *
-     * @param request request to the target server
+     * @param request       request to the target server
      * @param expectedDelta the delta we actually expect
-     * @param checkMap the map indicating if the delta was written
+     * @param checkMap      the map indicating if the delta was written
      */
     private void writePUTDeltaResponse(final HttpServerRequest request, final int expectedDelta, Map<String, Integer> checkMap) {
         request.bodyHandler(body -> {
             JsonObject content = new JsonObject(body.toString());
             if (content.getInteger("x-delta") != expectedDelta) {
-                log.debug("DeltaSync is: " + content.getInteger(("x-delta")) + " but expected is: " + expectedDelta );
+                log.debug("DeltaSync is: " + content.getInteger(("x-delta")) + " but expected is: " + expectedDelta);
                 request.response().setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
                 request.response().end();
             } else {
-                log.debug("DeltaSync is fine" );
+                log.debug("DeltaSync is fine");
                 checkMap.put("x-delta", content.getInteger("x-delta"));
                 request.response().setStatusCode(HttpStatus.SC_OK);
                 request.response().end();
@@ -312,10 +320,9 @@ public class ResourceMirrorHandlerTest {
 
         // emulate a source server
         sourceServer = createServer(SOURCE_PORT, request -> {
-            if ( request.uri().endsWith(path) ) {
+            if (request.uri().endsWith(path)) {
                 writeZipStream(request, path);
-            }
-            else {
+            } else {
                 request.response().setStatusCode(HttpStatus.SC_NOT_FOUND);
             }
 
@@ -326,9 +333,9 @@ public class ResourceMirrorHandlerTest {
 
         // Function which performs all necessary tests
         Function<HttpClientResponse, Void> testFunction = httpClientResponse -> {
-            log.debug("Result is: " );
+            log.debug("Result is: ");
             context.assertEquals(HttpStatus.SC_OK, httpClientResponse.statusCode());
-            httpClientResponse.bodyHandler( body -> {
+            httpClientResponse.bodyHandler(body -> {
                 JsonObject result = new JsonObject(body.toString());
 
                 // all elements ok?
@@ -339,7 +346,7 @@ public class ResourceMirrorHandlerTest {
                 context.assertEquals(entries.size(), results.size());
 
                 for (Object object : results) {
-                    if ( object instanceof JsonObject ) {
+                    if (object instanceof JsonObject) {
                         JsonObject entry = (JsonObject) object;
                         log.debug("" + entry);
 
@@ -348,8 +355,7 @@ public class ResourceMirrorHandlerTest {
                         context.assertEquals(expectedMimeTypes.get(entry.getString("path")),
                                 entries.get(entry.getString("path")).contentTypeFound);
                         context.assertTrue(entry.getBoolean("success"));
-                    }
-                    else {
+                    } else {
                         context.fail();
                     }
                 }
@@ -393,10 +399,9 @@ public class ResourceMirrorHandlerTest {
 
         // emulate a source server
         sourceServer = createServer(SOURCE_PORT, request -> {
-            if ( request.uri().endsWith(path) ) {
+            if (request.uri().endsWith(path)) {
                 writeZipStream(request, path);
-            }
-            else {
+            } else {
                 request.response().setStatusCode(HttpStatus.SC_NOT_FOUND);
             }
 
@@ -407,9 +412,9 @@ public class ResourceMirrorHandlerTest {
 
         // Function which performs all necessary tests
         Function<HttpClientResponse, Void> testFunction = httpClientResponse -> {
-            log.debug("Result is: " );
+            log.debug("Result is: ");
             context.assertEquals(HttpStatus.SC_OK, httpClientResponse.statusCode());
-            httpClientResponse.bodyHandler( body -> {
+            httpClientResponse.bodyHandler(body -> {
                 JsonObject result = new JsonObject(body.toString());
 
                 // all elements ok?
@@ -420,7 +425,7 @@ public class ResourceMirrorHandlerTest {
                 context.assertEquals(entries.size(), results.size());
 
                 for (Object object : results) {
-                    if ( object instanceof JsonObject ) {
+                    if (object instanceof JsonObject) {
                         JsonObject entry = (JsonObject) object;
                         log.debug("" + entry);
 
@@ -428,8 +433,7 @@ public class ResourceMirrorHandlerTest {
                         context.assertTrue(entries.containsKey(entry.getString("path")));
                         context.assertTrue(entries.get(entry.getString("path")).entryFound);
                         context.assertTrue(entry.getBoolean("success"));
-                    }
-                    else {
+                    } else {
                         context.fail();
                     }
                 }
@@ -493,29 +497,29 @@ public class ResourceMirrorHandlerTest {
 
         // emulate a target server
         targetServer = createServer(TARGET_PORT, request -> {
-            log.debug("Request: " + request.uri() + ", Method: " + request.method() );
+            log.debug("Request: " + request.uri() + ", Method: " + request.method());
             // deltasync request
-            if ( request.uri().endsWith(deltaPath) ) {
+            if (request.uri().endsWith(deltaPath)) {
                 log.debug("DeltaPath request: " + deltaPath);
                 // GET to check the current value
-                if ( request.method() == HttpMethod.GET ) {
-                    log.debug(" > using GET method" );
-                    writeGETDeltaResponse(request,startingDelta);
+                if (request.method() == HttpMethod.GET) {
+                    log.debug(" > using GET method");
+                    writeGETDeltaResponse(request, startingDelta);
                 }
                 // PUT to set the new value
-                else if ( request.method() == HttpMethod.PUT ) {
-                    log.debug(" > using PUT method" );
+                else if (request.method() == HttpMethod.PUT) {
+                    log.debug(" > using PUT method");
                     writePUTDeltaResponse(request, expectedDelta, checked);
                 }
                 // wrong ...
                 else {
-                    log.debug(" > using wrong method" );
+                    log.debug(" > using wrong method");
                     request.response().setStatusCode(HttpStatus.SC_BAD_REQUEST);
                     request.response().end();
                 }
             }
             // put of elements
-            else if ( entries.containsKey(request.uri().substring(1)) ) {
+            else if (entries.containsKey(request.uri().substring(1))) {
                 elementCount.incrementAndGet();
                 request.response().setStatusCode(HttpStatus.SC_OK);
                 request.response().end();
@@ -532,14 +536,13 @@ public class ResourceMirrorHandlerTest {
 
         // emulate a source server
         sourceServer = createServer(SOURCE_PORT, request -> {
-            if ( request.uri().endsWith(path + "?delta=" + startingDelta) ) {
+            if (request.uri().endsWith(path + "?delta=" + startingDelta)) {
                 // write the new delta header
                 request.response().headers().add("x-delta", String.valueOf(expectedDelta));
 
                 // write the stream
                 writeZipStream(request, path);
-            }
-            else {
+            } else {
                 request.response().setStatusCode(HttpStatus.SC_NOT_FOUND);
             }
 
@@ -550,11 +553,10 @@ public class ResourceMirrorHandlerTest {
         });
 
 
-
         // Function which performs all necessary tests
         Function<HttpClientResponse, Void> testFunction = httpClientResponse -> {
             context.assertEquals(HttpStatus.SC_OK, httpClientResponse.statusCode());
-            httpClientResponse.bodyHandler( body -> {
+            httpClientResponse.bodyHandler(body -> {
                 JsonObject result = new JsonObject(body.toString());
                 JsonArray results = result.getJsonArray("loadedresources");
 
@@ -598,29 +600,29 @@ public class ResourceMirrorHandlerTest {
 
         // emulate a target server
         targetServer = createServer(TARGET_PORT, request -> {
-            log.debug("Request: " + request.uri() + ", Method: " + request.method() );
+            log.debug("Request: " + request.uri() + ", Method: " + request.method());
             // deltasync request
-            if ( request.uri().endsWith(deltaPath) ) {
+            if (request.uri().endsWith(deltaPath)) {
                 log.debug("DeltaPath request: " + deltaPath);
                 // GET to check the current value
-                if ( request.method() == HttpMethod.GET ) {
-                    log.debug(" > using GET method" );
-                    writeGETDeltaResponse(request,startingDelta);
+                if (request.method() == HttpMethod.GET) {
+                    log.debug(" > using GET method");
+                    writeGETDeltaResponse(request, startingDelta);
                 }
                 // PUT to set the new value
-                else if ( request.method() == HttpMethod.PUT ) {
-                    log.debug(" > using PUT method" );
+                else if (request.method() == HttpMethod.PUT) {
+                    log.debug(" > using PUT method");
                     writePUTDeltaResponse(request, expectedDelta, checked);
                 }
                 // wrong ...
                 else {
-                    log.debug(" > using wrong method" );
+                    log.debug(" > using wrong method");
                     request.response().setStatusCode(HttpStatus.SC_BAD_REQUEST);
                     request.response().end();
                 }
             }
             // put of elements
-            else if ( entries.containsKey(request.uri().substring(1)) || request.uri().startsWith("/server/tests/") ) {
+            else if (entries.containsKey(request.uri().substring(1)) || request.uri().startsWith("/server/tests/")) {
                 request.response().setStatusCode(HttpStatus.SC_OK);
                 request.response().end();
             }
@@ -636,8 +638,8 @@ public class ResourceMirrorHandlerTest {
 
         // emulate a source server
         sourceServer = createServer(SOURCE_PORT, request -> {
-            if ( request.uri().endsWith(path + "?delta=" + startingDelta) ) {
-                log.debug("Request is performed with: " + request.uri() );
+            if (request.uri().endsWith(path + "?delta=" + startingDelta)) {
+                log.debug("Request is performed with: " + request.uri());
 
                 sourceRequestCount.incrementAndGet();
                 wrongDeltaRequestCount.incrementAndGet();
@@ -646,10 +648,9 @@ public class ResourceMirrorHandlerTest {
                 request.response().headers().add("x-delta", String.valueOf(expectedDelta));
 
                 // write the stream
-                 writeZipStream(request, wrongZip);
-            }
-            else if ( request.uri().endsWith(path + "?delta=" + expectedStartingDelta) ) {
-                log.debug("Request is performed with: " + request.uri() );
+                writeZipStream(request, wrongZip);
+            } else if (request.uri().endsWith(path + "?delta=" + expectedStartingDelta)) {
+                log.debug("Request is performed with: " + request.uri());
 
                 sourceRequestCount.incrementAndGet();
                 correctDeltaRequestCount.incrementAndGet();
@@ -659,8 +660,7 @@ public class ResourceMirrorHandlerTest {
 
                 // write the stream
                 writeZipStream(request, path);
-            }
-            else {
+            } else {
                 request.response().setStatusCode(HttpStatus.SC_NOT_FOUND);
             }
 
@@ -673,7 +673,7 @@ public class ResourceMirrorHandlerTest {
         // Function which performs all necessary tests
         Function<HttpClientResponse, Void> testFunction = httpClientResponse -> {
             context.assertEquals(HttpStatus.SC_OK, httpClientResponse.statusCode());
-            httpClientResponse.bodyHandler( body -> {
+            httpClientResponse.bodyHandler(body -> {
                 JsonObject result = new JsonObject(body.toString());
                 JsonArray results = result.getJsonArray("loadedresources");
 
@@ -724,36 +724,36 @@ public class ResourceMirrorHandlerTest {
 
         // emulate a target server
         targetServer = createServer(TARGET_PORT, request -> {
-            log.debug("Request: " + request.uri() + ", Method: " + request.method() );
+            log.debug("Request: " + request.uri() + ", Method: " + request.method());
             // deltasync request
-            if ( request.uri().endsWith(deltaPath) ) {
+            if (request.uri().endsWith(deltaPath)) {
                 log.debug("DeltaPath request: " + deltaPath);
                 // GET to check the current value
-                if ( request.method() == HttpMethod.GET ) {
-                    log.debug(" > using GET method" );
-                    writeGETDeltaResponse(request,startingDelta);
+                if (request.method() == HttpMethod.GET) {
+                    log.debug(" > using GET method");
+                    writeGETDeltaResponse(request, startingDelta);
                 }
                 // PUT to set the new value
-                else if ( request.method() == HttpMethod.PUT ) {
-                    log.debug(" > using PUT method" );
+                else if (request.method() == HttpMethod.PUT) {
+                    log.debug(" > using PUT method");
                     writePUTDeltaResponse(request, newDelta, checked);
                 }
                 // wrong ...
                 else {
-                    log.debug(" > using wrong method" );
+                    log.debug(" > using wrong method");
                     request.response().setStatusCode(HttpStatus.SC_BAD_REQUEST);
                     request.response().end();
                 }
             }
             // put of elements
-            else if ( entries.containsKey(request.uri().substring(1)) ) {
+            else if (entries.containsKey(request.uri().substring(1))) {
                 totalRequstCount.incrementAndGet();
 
                 String entry = request.uri();
 
                 // two request will / have to fail
-                if ( requestsToFail.contains(entry) ) {
-                    log.debug("create a fake fail request for: " + request.uri() );
+                if (requestsToFail.contains(entry)) {
+                    log.debug("create a fake fail request for: " + request.uri());
                     failedRequestCount.incrementAndGet();
                     request.response().setStatusCode(HttpStatus.SC_GATEWAY_TIMEOUT);
                 }
@@ -777,14 +777,13 @@ public class ResourceMirrorHandlerTest {
 
         // emulate a source server
         sourceServer = createServer(SOURCE_PORT, request -> {
-            if ( request.uri().endsWith(path + "?delta=" + startingDelta) ) {
+            if (request.uri().endsWith(path + "?delta=" + startingDelta)) {
                 // write the real delta header
                 request.response().headers().add("x-delta", String.valueOf(newDelta));
 
                 // write the stream
                 writeZipStream(request, path);
-            }
-            else {
+            } else {
                 request.response().setStatusCode(HttpStatus.SC_NOT_FOUND);
             }
 
@@ -797,7 +796,7 @@ public class ResourceMirrorHandlerTest {
         // Function which performs all necessary tests
         Function<HttpClientResponse, Void> testFunction = httpClientResponse -> {
             context.assertEquals(HttpStatus.SC_INTERNAL_SERVER_ERROR, httpClientResponse.statusCode());
-            httpClientResponse.bodyHandler( body -> {
+            httpClientResponse.bodyHandler(body -> {
                 JsonObject result = new JsonObject(body.toString());
                 JsonArray results = result.getJsonArray("loadedresources");
 
@@ -817,23 +816,21 @@ public class ResourceMirrorHandlerTest {
                 int failedCounter = 0;
                 int successCounter = 0;
                 for (Object object : results) {
-                    if ( object instanceof JsonObject ) {
+                    if (object instanceof JsonObject) {
                         JsonObject entry = (JsonObject) object;
                         log.debug("" + entry);
 
                         // should be in list
                         context.assertTrue(entries.containsKey(entry.getString("path")));
 
-                        if ( requestsToFail.contains("/" +entry.getString("path")) ){
-                           failedCounter++;
-                           context.assertFalse(entry.getBoolean("success"));
-                        }
-                        else {
+                        if (requestsToFail.contains("/" + entry.getString("path"))) {
+                            failedCounter++;
+                            context.assertFalse(entry.getBoolean("success"));
+                        } else {
                             successCounter++;
                             context.assertTrue(entry.getBoolean("success"));
                         }
-                    }
-                    else {
+                    } else {
                         context.fail();
                     }
                 }

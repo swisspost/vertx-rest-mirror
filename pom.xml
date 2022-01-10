@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.swisspush</groupId>
     <artifactId>rest-mirror</artifactId>
-    <version>2.2.2-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
     <name>rest-mirror</name>
     <description>
         A verticle that mirrors resources, which are provided as zip into a rest storage.
@@ -41,7 +41,7 @@
         <dependency>
             <groupId>org.swisspush</groupId>
             <artifactId>rest-storage</artifactId>
-            <version>2.5.3</version>
+            <version>3.0.0-SNAPSHOT</version>
         </dependency>
 
         <!-- other deps -->
@@ -336,7 +336,7 @@
         </profile>
     </profiles>
     <properties>
-        <vertx.version>3.5.3</vertx.version>
+        <vertx.version>4.2.1</vertx.version>
         <project.build.sourceEncoding>UTF8</project.build.sourceEncoding>
         <sonatypeOssDistMgmtSnapshotsUrl>
             https://oss.sonatype.org/content/repositories/snapshots/
