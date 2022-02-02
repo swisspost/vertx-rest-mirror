@@ -2,8 +2,6 @@ package org.swisspush.mirror;
 
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
 import io.vertx.core.json.Json;
@@ -116,100 +114,97 @@ class MirrorRequestHandler {
         String mirrorPath = mirrorRootPath + "/mirror/" + path;
 
         LOG.debug("mirror - get zip file: {}", mirrorPath);
-        mirrorHttpClient.request(HttpMethod.GET, mirrorPath).onComplete(new Handler<AsyncResult<HttpClientRequest>>() {
-            @Override
-            public void handle(AsyncResult<HttpClientRequest> event) {
-                HttpClientRequest request = event.result();
-                request.exceptionHandler(ex -> {
-                    LOG.error("Exception occured in Mirror-Get-Request to {}", mirrorPath, ex);
-                    sendResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), ex.toString());
-                }).send(asyncResult -> {
-                    HttpClientResponse zipResponse = asyncResult.result();
-                    if (zipResponse.statusCode() != 200) {
-                        LOG.error("mirror - couldn't get the resource: {} http status code was: {}", mirrorPath, zipResponse.statusCode());
+        mirrorHttpClient.request(HttpMethod.GET, mirrorPath).onComplete(event -> {
+            HttpClientRequest request = event.result();
+            request.exceptionHandler(ex -> {
+                LOG.error("Exception occured in Mirror-Get-Request to {}", mirrorPath, ex);
+                sendResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), ex.toString());
+            }).send(asyncResult -> {
+                HttpClientResponse zipResponse = asyncResult.result();
+                if (zipResponse.statusCode() != 200) {
+                    LOG.error("mirror - couldn't get the resource: {} http status code was: {}", mirrorPath, zipResponse.statusCode());
+                    response
+                            .setChunked(true)
+                            .setStatusCode(zipResponse.statusCode())
+                            .end("couldn't get the ZIP: " + mirrorPath);
+                    return;
+                }
+
+                if (xDeltaSyncPath != null) {
+                    String xDeltaString = zipResponse.getHeader("x-delta");
+                    try {
+                        newDelta = Long.parseLong(xDeltaString);
+                    } catch (Exception ex) {
+                        LOG.error("no or wrong response header 'x-delta: {}' received from {}", xDeltaString, mirrorPath, ex);
                         response
                                 .setChunked(true)
-                                .setStatusCode(zipResponse.statusCode())
-                                .end("couldn't get the ZIP: " + mirrorPath);
+                                .setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code())
+                                .end("no or wrong response header 'x-delta: " + xDeltaString + "'received from " + mirrorPath);
                         return;
                     }
 
-                    if (xDeltaSyncPath != null) {
-                        String xDeltaString = zipResponse.getHeader("x-delta");
-                        try {
-                            newDelta = Long.parseLong(xDeltaString);
-                        } catch (Exception ex) {
-                            LOG.error("no or wrong response header 'x-delta: {}' received from {}", xDeltaString, mirrorPath, ex);
-                            response
-                                    .setChunked(true)
-                                    .setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code())
-                                    .end("no or wrong response header 'x-delta: " + xDeltaString + "'received from " + mirrorPath);
-                            return;
-                        }
+                    /*
+                     * If the current delta value is higher
+                     * then the returned xDelta, xDelta is
+                     * reset to 0 and a re-request is performed,
+                     * to guarantee to get all the needed
+                     * elements.
+                     */
+                    if (currentDelta > newDelta) {
+                        LOG.warn("mirror - returned x-delta {} is lower then current x-delta value {}", newDelta, currentDelta);
 
-                        /*
-                         * If the current delta value is higher
-                         * then the returned xDelta, xDelta is
-                         * reset to 0 and a re-request is performed,
-                         * to guarantee to get all the needed
-                         * elements.
-                         */
-                        if (currentDelta > newDelta) {
-                            LOG.warn("mirror - returned x-delta {} is lower then current x-delta value {}", newDelta, currentDelta);
+                        // in order to get all data, we perform a retry with xDelta = 0
+                        currentDelta = newDelta = 0;
+                        LOG.info("mirror - starting a retry with x-delta = 0");
+                        String pathWithDeltaZero = replaceInvalidDeltaParameter(path, 0);
+                        performMirror(pathWithDeltaZero);
+                        return;
+                    }
+                }
 
-                            // in order to get all data, we perform a retry with xDelta = 0
-                            currentDelta = newDelta = 0;
-                            LOG.info("mirror - starting a retry with x-delta = 0");
-                            String pathWithDeltaZero = replaceInvalidDeltaParameter(path, 0);
-                            performMirror(pathWithDeltaZero);
-                            return;
-                        }
+                // hmmm - by using bodyHandler we get whole ZIP in-memory. No streaming. Will have memory issues when consuming huge ZIPs
+                zipResponse.bodyHandler(buffer -> {
+                    LOG.debug("mirror - handle the zip file response, statusCode: {} url: {}", zipResponse.statusCode(), mirrorPath);
+                    BufferWrapperInputStream bwis = new BufferWrapperInputStream(buffer);
+                    ZipIterator zipIterator = new ZipIterator(bwis);
+
+                    boolean isEmptyZip;
+                    try {
+                        isEmptyZip = !zipIterator.hasNext();
+                    } catch (Exception ex) {
+                        LOG.error("Problem parsing the ZIP response for url {}", mirrorPath, ex);
+                        sendResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), ex.getMessage());
+                        return;
+                    }
+                    if (isEmptyZip) {
+                        LOG.info("mirror - found no file entry in the zip file: {}", mirrorPath);
+                        // in delta sync it's perfectly normal, that no zip entry could be found
+                        boolean success = xDeltaSyncPath != null;
+                        sendResponse(success ? 200 : 400, "no zip entry found or no valid zip file");
+                        return;
                     }
 
-                    // hmmm - by using bodyHandler we get whole ZIP in-memory. No streaming. Will have memory issues when consuming huge ZIPs
-                    zipResponse.bodyHandler(buffer -> {
-                        LOG.debug("mirror - handle the zip file response, statusCode: {} url: {}", zipResponse.statusCode(), mirrorPath);
-                        BufferWrapperInputStream bwis = new BufferWrapperInputStream(buffer);
-                        ZipIterator zipIterator = new ZipIterator(bwis);
-
-                        boolean isEmptyZip;
-                        try {
-                            isEmptyZip = !zipIterator.hasNext();
-                        } catch (Exception ex) {
-                            LOG.error("Problem parsing the ZIP response for url {}", mirrorPath, ex);
-                            sendResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), ex.getMessage());
-                            return;
-                        }
-                        if (isEmptyZip) {
-                            LOG.info("mirror - found no file entry in the zip file: {}", mirrorPath);
-                            // in delta sync it's perfectly normal, that no zip entry could be found
-                            boolean success = xDeltaSyncPath != null;
-                            sendResponse(success ? 200 : 400, "no zip entry found or no valid zip file");
-                            return;
-                        }
-
-                        zipEntryPutter = new ZipEntryPutter(selfHttpClient, mirrorRootPath, zipIterator);
-                        zipEntryPutter.doneHandler(done -> {
-                            /*
-                             * If all the PUTs were successful and only then, the deltasync
-                             * attribute may be written.
-                             * Otherwise no delta sync is written!ZipContentHandlerTest
-                             */
-                            if (done.succeeded()) {
-                                if (xDeltaSyncPath != null) {
-                                    saveNewDeltaAndThenSendResponse();
-                                } else {
-                                    sendResponse(HttpResponseStatus.OK.code(), null);
-                                }
+                    zipEntryPutter = new ZipEntryPutter(selfHttpClient, mirrorRootPath, zipIterator);
+                    zipEntryPutter.doneHandler(done -> {
+                        /*
+                         * If all the PUTs were successful and only then, the deltasync
+                         * attribute may be written.
+                         * Otherwise no delta sync is written!ZipContentHandlerTest
+                         */
+                        if (done.succeeded()) {
+                            if (xDeltaSyncPath != null) {
+                                saveNewDeltaAndThenSendResponse();
                             } else {
-                                LOG.error("ZipEntryPutter failed while working on ZIP from {}", mirrorPath, done.cause());
-                                sendResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), done.cause().getMessage());
+                                sendResponse(HttpResponseStatus.OK.code(), null);
                             }
-                        });
-                        zipEntryPutter.handleNext();
+                        } else {
+                            LOG.error("ZipEntryPutter failed while working on ZIP from {}", mirrorPath, done.cause());
+                            sendResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), done.cause().getMessage());
+                        }
                     });
+                    zipEntryPutter.handleNext();
                 });
-            }
+            });
         });
     }
 
@@ -237,18 +232,20 @@ class MirrorRequestHandler {
         Buffer payload = body.toBuffer();
 
         LOG.debug("mirror - put x-delta-sync file: {} with value: {}", xDeltaSyncPath, newDelta);
-        selfHttpClient.request(HttpMethod.PUT, xDeltaSyncPath).result()
-                .putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
-                .putHeader(HttpHeaders.CONTENT_LENGTH, Integer.toString(payload.length()))
-                .send(payload, asyncResult -> {
-                    HttpClientResponse putNewDeltaResponse = asyncResult.result();
-                    int s = putNewDeltaResponse.statusCode();
-                    if (s == 200) {
-                        sendResponse(s, null);
-                    } else {
-                        sendResponse(s, putNewDeltaResponse.statusMessage());
-                    }
-                });
+        selfHttpClient.request(HttpMethod.PUT, xDeltaSyncPath).onComplete(event -> {
+            HttpClientRequest request = event.result();
+            request.putHeader(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
+                    .putHeader(HttpHeaders.CONTENT_LENGTH, Integer.toString(payload.length()))
+                    .send(payload, asyncResult -> {
+                        HttpClientResponse putNewDeltaResponse = asyncResult.result();
+                        int s = putNewDeltaResponse.statusCode();
+                        if (s == 200) {
+                            sendResponse(s, null);
+                        } else {
+                            sendResponse(s, putNewDeltaResponse.statusMessage());
+                        }
+                    });
+        });
     }
 
     private void sendResponse(int responseStatusCode, String reason) {
