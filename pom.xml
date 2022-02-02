@@ -41,7 +41,7 @@
         <dependency>
             <groupId>org.swisspush</groupId>
             <artifactId>rest-storage</artifactId>
-            <version>3.0.0-SNAPSHOT</version>
+            <version>3.0.0</version>
         </dependency>
 
         <!-- other deps -->
