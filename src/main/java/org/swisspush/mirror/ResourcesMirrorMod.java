@@ -2,6 +2,7 @@ package org.swisspush.mirror;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpServerOptions;
@@ -15,7 +16,7 @@ import io.vertx.core.json.JsonObject;
 public class ResourcesMirrorMod extends AbstractVerticle {
 
     @Override
-    public void start(Future<Void> startFuture) {
+    public void start(Promise<Void> startPromise) {
 
         JsonObject config = config();
 
@@ -43,9 +44,9 @@ public class ResourcesMirrorMod extends AbstractVerticle {
 
         vertx.createHttpServer(options).requestHandler(new ResourcesMirrorHandler(vertx, mirrorRootPath, mirrorClient, selfClient)).listen(serverPort, result -> {
             if(result.succeeded()){
-                startFuture.complete();
+                startPromise.complete();
             } else {
-                startFuture.fail(result.cause());
+                startPromise.fail(result.cause());
             }
         });
     }
