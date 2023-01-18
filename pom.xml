@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.swisspush</groupId>
     <artifactId>rest-mirror</artifactId>
-    <version>3.0.1-SNAPSHOT</version>
+    <version>3.0.3-SNAPSHOT</version>
     <name>rest-mirror</name>
     <description>
         A verticle that mirrors resources, which are provided as zip into a rest storage.
