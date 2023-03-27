@@ -11,6 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.swisspush.reststorage.MimeTypeResolver;
 
+import java.util.Map;
+
 /**
  * Visits a ZipInputStream (wrapped in a {@link ZipIterator}) entry by entry
  * and executes a http-PUT with its content for each entry.
@@ -40,10 +42,13 @@ public class ZipEntryPutter {
     final JsonArray loadedResources = new JsonArray();
     private boolean success = true;
 
-    public ZipEntryPutter(HttpClient httpClient, String mirrorRootPath, ZipIterator zipIterator) {
+    private final Map<String, String> internalRequestHeaders;
+
+    public ZipEntryPutter(HttpClient httpClient, String mirrorRootPath, ZipIterator zipIterator, Map<String, String> internalRequestHeaders) {
         this.httpClient = httpClient;
         this.mirrorRootPath = mirrorRootPath;
         this.zipIterator = zipIterator;
+        this.internalRequestHeaders = internalRequestHeaders;
     }
 
     public void doneHandler(Handler<AsyncResult<Void>> doneHandler) {
@@ -83,6 +88,7 @@ public class ZipEntryPutter {
         LOG.debug("mirror - put resource: {}", absolutePath);
         httpClient.request(HttpMethod.PUT, absolutePath).onComplete(event -> {
             HttpClientRequest cReq = event.result();
+            handleInternalRequestHeaders(cReq);
             cReq.exceptionHandler(ex -> {
                 LOG.error("mirror - error in put request for {}", relativePath, ex);
                 addLoadedResourceInfo(relativePath, false);
@@ -114,6 +120,12 @@ public class ZipEntryPutter {
             });
         });
 
+    }
+
+    private void handleInternalRequestHeaders(HttpClientRequest request){
+        if(internalRequestHeaders != null) {
+            request.headers().addAll(internalRequestHeaders);
+        }
     }
 
     private void addLoadedResourceInfo(String relativePath, boolean success) {
