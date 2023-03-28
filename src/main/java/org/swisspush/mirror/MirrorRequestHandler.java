@@ -9,6 +9,7 @@ import io.vertx.core.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,11 +54,15 @@ class MirrorRequestHandler {
 
     private ZipEntryPutter zipEntryPutter;
 
-    MirrorRequestHandler(HttpClient selfHttpClient, HttpClient mirrorHttpClient, HttpServerResponse response, String mirrorRootPath) {
+    private final Map<String, String> internalRequestHeaders;
+
+    MirrorRequestHandler(HttpClient selfHttpClient, HttpClient mirrorHttpClient, HttpServerResponse response,
+                         String mirrorRootPath, Map<String, String> internalRequestHeaders) {
         this.selfHttpClient = selfHttpClient;
         this.mirrorHttpClient = mirrorHttpClient;
         this.response = response;
         this.mirrorRootPath = mirrorRootPath;
+        this.internalRequestHeaders = internalRequestHeaders;
     }
 
 
@@ -110,14 +115,21 @@ class MirrorRequestHandler {
         });
     }
 
+    private void handleInternalRequestHeaders(HttpClientRequest request){
+        if(internalRequestHeaders != null) {
+            request.headers().addAll(internalRequestHeaders);
+        }
+    }
+
     private void performMirror(String path) {
         String mirrorPath = mirrorRootPath + "/mirror/" + path;
 
         LOG.debug("mirror - get zip file: {}", mirrorPath);
         mirrorHttpClient.request(HttpMethod.GET, mirrorPath).onComplete(event -> {
             HttpClientRequest request = event.result();
+            handleInternalRequestHeaders(request);
             request.exceptionHandler(ex -> {
-                LOG.error("Exception occured in Mirror-Get-Request to {}", mirrorPath, ex);
+                LOG.error("Exception occurred in Mirror-Get-Request to {}", mirrorPath, ex);
                 sendResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), ex.toString());
             }).send(asyncResult -> {
                 HttpClientResponse zipResponse = asyncResult.result();
@@ -184,7 +196,7 @@ class MirrorRequestHandler {
                         return;
                     }
 
-                    zipEntryPutter = new ZipEntryPutter(selfHttpClient, mirrorRootPath, zipIterator);
+                    zipEntryPutter = new ZipEntryPutter(selfHttpClient, mirrorRootPath, zipIterator, internalRequestHeaders);
                     zipEntryPutter.doneHandler(done -> {
                         /*
                          * If all the PUTs were successful and only then, the deltasync
