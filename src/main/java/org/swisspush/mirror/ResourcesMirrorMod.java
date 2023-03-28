@@ -6,7 +6,13 @@ import io.vertx.core.Promise;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Initializes the ResourcesMirrorHandler.
@@ -14,6 +20,8 @@ import io.vertx.core.json.JsonObject;
  * @author Florian Kammermann, Oliver Henning
  */
 public class ResourcesMirrorMod extends AbstractVerticle {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ResourcesMirrorMod.class);
 
     @Override
     public void start(Promise<Void> startPromise) {
@@ -36,14 +44,18 @@ public class ResourcesMirrorMod extends AbstractVerticle {
         // the root path used for accessing the zip file
         String mirrorRootPath = config.getString("mirrorRootPath", "/root");
 
+        JsonArray defaultRequestHeaders = config.getJsonArray("internalRequestHeaders");
+        Map<String, String> internalRequestHeaders = buildInternalRequestHeaders(defaultRequestHeaders);
+
         final HttpClient selfClient = vertx.createHttpClient(buildHttpClientOptions(selfHost, selfPort, selfTimeout));
         final HttpClient mirrorClient = vertx.createHttpClient(buildHttpClientOptions(mirrorHost, mirrorPort, mirrorTimeout));
 
         // in Vert.x 2x 100-continues was activated per default, in vert.x 3x it is off per default.
         HttpServerOptions options = new HttpServerOptions().setHandle100ContinueAutomatically(true);
 
-        vertx.createHttpServer(options).requestHandler(new ResourcesMirrorHandler(vertx, mirrorRootPath, mirrorClient, selfClient)).listen(serverPort, result -> {
-            if(result.succeeded()){
+        vertx.createHttpServer(options).requestHandler(new ResourcesMirrorHandler(vertx, mirrorRootPath, mirrorClient,
+                selfClient, internalRequestHeaders)).listen(serverPort, result -> {
+            if (result.succeeded()) {
                 startPromise.complete();
             } else {
                 startPromise.fail(result.cause());
@@ -51,7 +63,33 @@ public class ResourcesMirrorMod extends AbstractVerticle {
         });
     }
 
-    private HttpClientOptions buildHttpClientOptions(String host, int port, int timeout){
+    private Map<String, String> buildInternalRequestHeaders(JsonArray headersArray) {
+        HashMap<String, String> headersMap = new HashMap<>();
+        if(headersArray == null) {
+            return headersMap;
+        }
+
+        for (int i = 0; i < headersArray.size(); i++) {
+            try {
+                JsonArray array = headersArray.getJsonArray(i);
+                if(array.size() == 2) {
+                    String headerName = array.getString(0);
+                    String headerValue = array.getString(1);
+                    if(headerName != null && headerValue != null) {
+                        headersMap.put(headerName, headerValue);
+                    }
+                } else {
+                    LOG.warn("Invalid configuration entry for internal request header: {}", array);
+                }
+            } catch (ClassCastException ex) {
+                LOG.warn("Got invalid configuration resource for internal request headers. Not going to use it!");
+            }
+        }
+
+        return headersMap;
+    }
+
+    private HttpClientOptions buildHttpClientOptions(String host, int port, int timeout) {
         return new HttpClientOptions()
                 .setDefaultHost(host)
                 .setDefaultPort(port)

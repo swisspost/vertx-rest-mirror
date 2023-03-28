@@ -15,15 +15,14 @@ The resources (files) can be zipped in any path depth, the path will be mapped t
 
 The API
 --------
-HTTP Method: `POST`  
-URL: `http://localhost:8686/mirror`  
-payload:   
+> POST http://localhost:8686/mirror  
+
+Payload:   
 
     {
         "path": "relative/path/to/the/zip.zip" // Relative path (see config parameter mirrorRootPath) to the zip
         ["content-type": "application/json"]  // optional - content-type of the content elements in zip file
     }
-
 
 
 Configuration
@@ -34,9 +33,23 @@ Configuration
         "selfClientHost": "localhost" // where the verticle access the zip, standard is localhost
         "selfClientPort": 7012 // where the verticle access the zip, standard is 7012
         "mirrorHost": "localhost" // where the zip file entries are putted, standard is localhost
-        "mirrorPort": "7012" // where the zip file entries are putted, standard is 7012
+        "mirrorPort": 7012 // where the zip file entries are putted, standard is 7012
         "mirrorRootPath": "/root" // the root path, that is used to get the zip and to put the resources, standard is "/root"
+        "internalRequestHeaders": // Array of arrays holding request headers which are added to all outgoing requests
     }
+
+Example:
+```
+{
+    "serverPort": 8686,
+    "selfClientHost": "localhost",
+    "selfClientPort": 7012,
+    "mirrorHost": "localhost",
+    "mirrorPort": 7012,
+    "mirrorRootPath": "/root",
+    "internalRequestHeaders": [["x-foo", "bar"], ["x-bar", "zzz"]]
+}
+```
     
 Dependencies
 ------------

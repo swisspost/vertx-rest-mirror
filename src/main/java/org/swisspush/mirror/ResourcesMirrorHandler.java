@@ -10,6 +10,8 @@ import io.vertx.ext.web.Router;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 /**
  * <ul>
  *     <li>receives and parses MirrorRequest</li>
@@ -31,8 +33,10 @@ public class ResourcesMirrorHandler implements Handler<HttpServerRequest> {
      * @param mirrorRootPath the root path, that is used to get the zip and to put the resources
      * @param mirrorHttpClient where the verticle access the zip
      * @param selfHttpClient where the zip file entries are putted
+     * @param internalRequestHeaders map containing the request headers to add to all requests
      */
-    ResourcesMirrorHandler(Vertx vertx, String mirrorRootPath, HttpClient mirrorHttpClient, HttpClient selfHttpClient) {
+    ResourcesMirrorHandler(Vertx vertx, String mirrorRootPath, HttpClient mirrorHttpClient, HttpClient selfHttpClient,
+                           Map<String, String> internalRequestHeaders) {
         this.router = Router.router(vertx);
 
         router.postWithRegex(".*mirror").handler(ctx -> ctx.request().bodyHandler(buffer -> {
@@ -66,7 +70,8 @@ public class ResourcesMirrorHandler implements Handler<HttpServerRequest> {
             // parameter (&delta=x).
             String xDeltaSync = body.getString("x-delta-sync");
 
-            new MirrorRequestHandler(selfHttpClient, mirrorHttpClient, response, mirrorRootPath).perform(path, xDeltaSync);
+            new MirrorRequestHandler(selfHttpClient, mirrorHttpClient, response, mirrorRootPath, internalRequestHeaders)
+                    .perform(path, xDeltaSync);
         }));
     }
 

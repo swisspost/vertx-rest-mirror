@@ -81,6 +81,12 @@ public class ResourceMirrorHandlerTest {
         mirrorConfig.put("mirrorRootPath", "");
         mirrorConfig.put("serverPort", SERVER_PORT);
         mirrorConfig.put("mirrorPort", SOURCE_PORT);
+
+        JsonArray internalRequestHeaders = new JsonArray();
+        JsonArray fooRequestHeader = new JsonArray().add("x-foo").add("zzz");
+        internalRequestHeaders.add(fooRequestHeader);
+        mirrorConfig.put("internalRequestHeaders", internalRequestHeaders);
+
         DeploymentOptions mirrorOptions = new DeploymentOptions().setConfig(mirrorConfig);
 
         // deploy verticle (mirror)
@@ -236,7 +242,7 @@ public class ResourceMirrorHandlerTest {
 
     @Test
     public void testMirror_replaceInvalidDeltaParameter(TestContext context) {
-        MirrorRequestHandler rmh = new MirrorRequestHandler(null, null, null, null);
+        MirrorRequestHandler rmh = new MirrorRequestHandler(null, null, null, null, null);
 
         /*
          * case 1
