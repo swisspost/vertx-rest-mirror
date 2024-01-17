@@ -9,7 +9,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.swisspush.reststorage.MimeTypeResolver;
+import org.swisspush.mirror.util.MimeTypeResolver;
 
 import java.util.Map;
 

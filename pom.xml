@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.swisspush</groupId>
     <artifactId>rest-mirror</artifactId>
-    <version>3.0.5-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <name>rest-mirror</name>
     <description>
         A verticle that mirrors resources, which are provided as zip into a rest storage.
@@ -37,14 +37,6 @@
         <url>https://github.com/swisspush/vertx-rest-mirror.git</url>
     </scm>
     <dependencies>
-        <!-- swisspush dependencies -->
-        <dependency>
-            <groupId>org.swisspush</groupId>
-            <artifactId>rest-storage</artifactId>
-            <version>3.0.0</version>
-        </dependency>
-
-        <!-- other deps -->
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
@@ -60,25 +52,25 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.4</version>
+            <version>2.15.1</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
-            <version>2.4</version>
+            <version>2.6</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.6</version>
+            <version>2.0.10</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.6</version>
+            <artifactId>slf4j-reload4j</artifactId>
+            <version>2.0.10</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -91,7 +83,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.10</version>
+            <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -101,9 +93,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.jayway.restassured</groupId>
+            <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-            <version>2.4.1</version>
+            <version>5.4.0</version>
             <scope>test</scope>
         </dependency>
 
@@ -381,7 +373,7 @@
         </profile>
     </profiles>
     <properties>
-        <vertx.version>4.2.1</vertx.version>
+        <vertx.version>4.5.1</vertx.version>
         <project.build.sourceEncoding>UTF8</project.build.sourceEncoding>
         <sonatypeOssDistMgmtSnapshotsUrl>
             https://oss.sonatype.org/content/repositories/snapshots/
