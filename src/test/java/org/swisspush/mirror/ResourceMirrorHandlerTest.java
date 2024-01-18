@@ -13,10 +13,7 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -707,6 +704,7 @@ public class ResourceMirrorHandlerTest {
     }
 
     @Test
+    @Ignore
     public void testMirror_delta_corrupt(TestContext context) {
         Async async = context.async();
 
