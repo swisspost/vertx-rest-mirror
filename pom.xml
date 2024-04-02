@@ -373,7 +373,7 @@
         </profile>
     </profiles>
     <properties>
-        <vertx.version>4.5.1</vertx.version>
+        <vertx.version>4.5.2</vertx.version>
         <project.build.sourceEncoding>UTF8</project.build.sourceEncoding>
         <sonatypeOssDistMgmtSnapshotsUrl>
             https://oss.sonatype.org/content/repositories/snapshots/
