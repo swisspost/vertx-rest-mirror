@@ -23,6 +23,9 @@ public class ResourcesMirrorMod extends AbstractVerticle {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResourcesMirrorMod.class);
 
+    private static final int DEFAULT_MAX_HEADER_SIZE = 64 * 1024;
+    private static final int DEFAULT_MAX_INITIAL_LINE_LENGTH = 16 * 1024;
+
     @Override
     public void start(Promise<Void> startPromise) {
 
@@ -51,7 +54,10 @@ public class ResourcesMirrorMod extends AbstractVerticle {
         final HttpClient mirrorClient = vertx.createHttpClient(buildHttpClientOptions(mirrorHost, mirrorPort, mirrorTimeout));
 
         // in Vert.x 2x 100-continues was activated per default, in vert.x 3x it is off per default.
-        HttpServerOptions options = new HttpServerOptions().setHandle100ContinueAutomatically(true);
+        HttpServerOptions options = new HttpServerOptions()
+                .setHandle100ContinueAutomatically(true)
+                .setMaxHeaderSize(DEFAULT_MAX_HEADER_SIZE)
+                .setMaxInitialLineLength(DEFAULT_MAX_INITIAL_LINE_LENGTH);
 
         vertx.createHttpServer(options).requestHandler(new ResourcesMirrorHandler(vertx, mirrorRootPath, mirrorClient,
                 selfClient, internalRequestHeaders)).listen(serverPort, result -> {
