@@ -5,7 +5,7 @@ vertx-mirror
 [![codecov](https://codecov.io/gh/swisspost/vertx-rest-mirror/branch/master/graph/badge.svg?token=14IWfjaJYm)](https://codecov.io/gh/swisspost/vertx-rest-mirror)
 [![Maven Central](https://img.shields.io/maven-central/v/org.swisspush/rest-mirror.svg)]()
 
-A verticle that mirrors resources, which are provided as zip into a rest storage
+A verticle that mirrors resources, which are provided as zip into a rest storage.
 
 Provide resources as zip
 ------------------------
