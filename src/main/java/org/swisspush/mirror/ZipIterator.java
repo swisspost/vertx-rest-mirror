@@ -13,7 +13,7 @@ import java.util.zip.ZipInputStream;
  * <ul>
  *     <li>Behaves like a {@link java.util.Iterator} - but does not formally implement it as we don't want to hide Exceptions</li>
  *     <li>ZIP must be provided as InputStream</li>
- *     <li>Only <b>file</b>-entries are are used (in other words: directory-entries in the ZIP are skipped/ignored)</li>
+ *     <li>Only <b>file</b>-entries are used (in other words: directory-entries in the ZIP are skipped/ignored)</li>
  * </ul>
  *
  * @author Oliver Henning

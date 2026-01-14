@@ -339,7 +339,7 @@
         </profile>
     </profiles>
     <properties>
-        <vertx.version>4.5.2</vertx.version>
+        <vertx.version>4.5.23</vertx.version>
         <project.build.sourceEncoding>UTF8</project.build.sourceEncoding>
     </properties>
 </project>
