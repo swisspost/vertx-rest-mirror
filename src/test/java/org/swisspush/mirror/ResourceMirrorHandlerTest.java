@@ -374,7 +374,6 @@ public class ResourceMirrorHandlerTest {
     }
 
     @Test
-    @Ignore
     public void testMirror_GetZipDeployZip(TestContext context) {
         Async async = context.async();
 
@@ -705,7 +704,6 @@ public class ResourceMirrorHandlerTest {
     }
 
     @Test
-    @Ignore
     public void testMirror_delta_corrupt(TestContext context) {
         Async async = context.async();
 
